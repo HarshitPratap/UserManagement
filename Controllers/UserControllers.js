@@ -1,7 +1,7 @@
 const {validationResult} = require('express-validator');
 const bcrypt = require('bcryptjs');
 const User = require('../Models/User');
-
+//create user or admin
 const createUser = async (req,res) => {
     try {
         //checking for validation failed
@@ -55,5 +55,66 @@ const createUser = async (req,res) => {
         console.log(error);
     }
 }
-
-module.exports = {createUser};
+//view user or Admin
+const viewUsers = async (req,res) => {
+    try {
+        //checking user can't create Admin
+        if(req.payload.role === 'User') {
+            const users = await User.find({role:'User'}).exec();
+            if (users == null) {
+                res.status(400).json({
+                    status:false,
+                    users:[]
+                });
+                return;
+            }
+            res.status(200).json({
+                status:true,
+                users
+            });
+            return; 
+        }else{
+            const users = await User.find({});
+            res.status(200).json({
+                status:true,
+                users
+            });
+            return;
+        }  
+    } catch (error) {
+        console.log(error);
+    }
+}
+//View user or Admin specific fields
+const viewUsersFields = async (req,res) => {
+    try {
+        const fields = req.params.fields;
+        const query = fields.split(',').join(' ');
+        //checking user can't create Admin
+        if(req.payload.role === 'User') {
+            const users = await User.find({role:'User'}).select(query);
+            if (users == null) {
+                res.status(400).json({
+                    status:false,
+                    users:[]
+                });
+                return;
+            }
+            res.status(200).json({
+                status:true,
+                users
+            });
+            return; 
+        }else{
+            const users = await User.find({}).select(query);
+            res.status(200).json({
+                status:true,
+                users
+            });
+            return;
+        }  
+    } catch (error) {
+        console.log(error);
+    }
+}
+module.exports = {createUser,viewUsers,viewUsersFields};
