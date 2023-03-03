@@ -60,7 +60,7 @@ const viewUsers = async (req,res) => {
     try {
         //checking user can't create Admin
         if(req.payload.role === 'User') {
-            const users = await User.find({role:'User'}).exec();
+            const users = await User.find({role:'User'},{password:0}).exec();
             if (users == null) {
                 res.status(400).json({
                     status:false,
@@ -74,13 +74,32 @@ const viewUsers = async (req,res) => {
             });
             return; 
         }else{
-            const users = await User.find({});
+            const users = await User.find({},{password:0});
             res.status(200).json({
                 status:true,
                 users
             });
             return;
         }  
+    } catch (error) {
+        console.log(error);
+    }
+}
+//view user by id
+const viewUser = async (req,res) => {
+    try {
+        const user = await User.findOne({_id:req.params.id},{password:0});
+        if(user == null){
+            res.status(401).json({
+                status:false,
+                user
+            });
+            return;  
+        }
+        res.status(200).json({
+            status:true,
+            user
+        });  
     } catch (error) {
         console.log(error);
     }
@@ -92,7 +111,7 @@ const viewUsersFields = async (req,res) => {
         const query = fields.split(',').join(' ');
         //checking user can't create Admin
         if(req.payload.role === 'User') {
-            const users = await User.find({role:'User'}).select(query);
+            const users = await User.find({role:'User'},{password:0}).select(query);
             if (users == null) {
                 res.status(400).json({
                     status:false,
@@ -106,7 +125,7 @@ const viewUsersFields = async (req,res) => {
             });
             return; 
         }else{
-            const users = await User.find({}).select(query);
+            const users = await User.find({},{password:0}).select(query);
             res.status(200).json({
                 status:true,
                 users
@@ -117,4 +136,36 @@ const viewUsersFields = async (req,res) => {
         console.log(error);
     }
 }
-module.exports = {createUser,viewUsers,viewUsersFields};
+
+const updateUser = async (req,res) => {
+    try {
+        const user = await User.findOne({_id: req.params.id});
+        if(user == null){
+            res.status(401).json({
+                status:false,
+                user
+            });
+            return;  
+        }
+        if (user.role === 'Admin' && req.payload.role === 'User') {
+            res.status(401).json({
+                status:false,
+                message:"You are signedIn as user and you don't have permission to update admin."
+            });
+            return;    
+        }
+        const newUser = await User.findByIdAndUpdate({
+                _id:user._id
+            },
+            req.body,
+            {new:true}
+        ).select({password:0});
+        res.status(201).json({
+            status:true,
+            newUser
+        });
+    } catch (error) {
+        console.log(error);
+    }
+}
+module.exports = {createUser,viewUsers,viewUser,viewUsersFields,updateUser};
